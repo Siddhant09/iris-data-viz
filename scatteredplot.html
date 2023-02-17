@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Iris Dataset - Scatter Plot with D3.js</title>
+    <style>
+        body {
+            margin: 10;
+            overflow: hidden;
+        }
+
+        .tick text {
+            font-size: 12px;
+        }
+
+        a {
+            margin-left: 10px;
+        }
+    </style>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+
+<body>
+    <table width="100%">
+        <tr>
+            <td width="50%">
+                <h1>Iris Dataset - Scatter Plot</h1>
+                <h3>Petal Length VS Sepal Length</h3>
+            </td>
+            <td width="50%" style="vertical-align: top;">
+                <div style="text-align: right; font-size: 20px !important;">
+                    <a href="histogram.html">Histogram</a>
+                    <a href="scatteredplot.html">Scatter Plot</a>
+                    <a href="parallel.html">Parallel Coordinates</a>
+                    <a href="voilin.html">Voilin Plot</a>
+                    <a href="boxplot.html">Box Plot</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <div id="sp"></div>
+    <script>
+        const { csv, select, scaleLinear, extent, axisLeft, axisBottom, } = d3;
+        const csvUrl = 'iris_new.csv'
+        const parseRow = (d) => {
+            d.sepal_length = +d.sepal_length;
+            d.sepal_width = +d.sepal_width;
+            d.petal_length = +d.petal_length;
+            d.petal_width = +d.petal_width;
+            return d;
+        };
+        const xValue = (d) => d.petal_length;
+        const rxValue = (d) => d.petal_width;
+        const yValue = (d) => d.sepal_length;
+        const ryValue = (d) => d.sepal_width;
+        const speciesValue = (d) => d.variety;
+        const margin = {
+            top: 30,
+            right: 200,
+            bottom: 60,
+            left: 90,
+        };
+        const radius = 5
+        const width = window.innerWidth / 2;
+        const height = window.innerHeight / 2;
+        const svg = select('#sp')
+            .append('svg')
+            .attr('width', width)
+            .attr('height', height);
+        const main = async () => {
+            const data = await csv(csvUrl, parseRow);
+            const x = scaleLinear()
+                .domain(extent(data, xValue))
+                .range([margin.left, width - margin.right]);
+            const y = scaleLinear()
+                .domain(extent(data, yValue))
+                .range([height - margin.bottom, margin.top]);
+            const marker = (d) => {
+                switch (d) {
+                    case 'Setosa':
+                        return '#6bf54c';
+                    case 'Versicolor':
+                        return '#524cf5';
+                    default:
+                        return '#f54c4c';
+                }
+            }
+
+            const marks = data.map((d) => ({
+                x: x(xValue(d)),
+                y: y(yValue(d)),
+                species: speciesValue(d),
+                color: marker(speciesValue(d)),
+                rx: rxValue(d),
+                ry: ryValue(d),
+            }));
+
+            svg
+                .selectAll('circle')
+                .data(marks)
+                .join('circle')
+                .attr('cx', (d) => d.x)
+                .attr('cy', (d) => d.y)
+                .attr('fill', (d) => d.color)
+                .attr('rx', (d) => (d.rx))
+                .attr('ry', (d) => (d.ry))
+                .attr('r', radius);
+            svg
+                .append('g')
+                .attr('transform', `translate(${margin.left},0)`)
+                .call(axisLeft(y));
+
+            svg.append('text')
+                .attr('class', 'axis-label')
+                .attr('x', -height / 2)
+                .attr('y', 60)
+                .style("font", "20px")
+                .style('text-anchor', 'middle')
+                .attr('transform', `rotate(-90)`)
+                .text('Sepal Length');
+
+            svg
+                .append('g')
+                .attr('transform', `translate(0,${height - margin.bottom})`)
+                .call(axisBottom(x));
+
+            svg.append('text')
+                .attr('class', 'axis-label')
+                .attr('x', width / 2)
+                .attr('y', 460)
+                .style("font", "20px")
+                .style('text-anchor', 'middle')
+                .text('Petal Length');
+
+            svg.append("circle").attr("cx", width - 150).attr("cy", 30).attr("r", 6).style("fill", "#6bf54c")
+            svg.append("circle").attr("cx", width - 150).attr("cy", 60).attr("r", 6).style("fill", "#524cf5")
+            svg.append("circle").attr("cx", width - 150).attr("cy", 90).attr("r", 6).style("fill", "#f54c4c")
+            svg.append("text").attr("x", width - 130).attr("y", 30).text("Setosa").style("font-size", "15px").attr("alignment-baseline", "middle")
+            svg.append("text").attr("x", width - 130).attr("y", 60).text("Versicolor").style("font-size", "15px").attr("alignment-baseline", "middle")
+            svg.append("text").attr("x", width - 130).attr("y", 90).text("Virginica").style("font-size", "15px").attr("alignment-baseline", "middle")
+
+        };
+        main();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Iris Dataset - Parallel Coordinates with D3.js</title>
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <style>
+        .tick text {
+            font-size: 12px;
+        }
+
+        a {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <table width="100%">
+        <tr>
+            <td width="50%">
+                <h1>Iris Dataset - Parallel Coordinates</h1>
+            </td>
+            <td width="50%" style="vertical-align: top;">
+                <div style="text-align: right; font-size: 20px !important;">
+                    <a href="histogram.html">Histogram</a>
+                    <a href="scatteredplot.html">Scatter Plot</a>
+                    <a href="parallel.html">Parallel Coordinates</a>
+                    <a href="voilin.html">Voilin Plot</a>
+                    <a href="boxplot.html">Box Plot</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <div id="svg"></div>
+    <script>
+        var margin = { top: 30, right: 200, bottom: 10, left: 50 },
+            width = 1000 - margin.left - margin.right,
+            height = 800 - margin.top - margin.bottom;
+
+        var svg = d3.select("#svg")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+        d3.csv("iris_new.csv", function (data) {
+            var color = d3.scaleOrdinal()
+                .domain(["setosa", "versicolor", "virginica"])
+                .range(["#6bf54c", "#524cf5", "#f54c4c"])
+
+            dimensions = ["sepal_length", "sepal_width", "petal_length", "petal_width"]
+
+            var y = {}
+            for (i in dimensions) {
+                name = dimensions[i]
+                y[name] = d3.scaleLinear()
+                    .domain([0, 8])
+                    .range([height, 0])
+            }
+
+            x = d3.scalePoint()
+                .range([0, width])
+                .domain(dimensions);
+
+            var highlight = function (d) {
+
+                selected_specie = d.variety
+
+                d3.selectAll(".line")
+                    .transition().duration(200)
+                    .style("stroke", "lightgrey")
+                    .style("opacity", "0.2")
+                d3.selectAll("." + selected_specie)
+                    .transition().duration(200)
+                    .style("stroke", color(selected_specie))
+                    .style("opacity", "1")
+            }
+
+            var doNotHighlight = function (d) {
+                d3.selectAll(".line")
+                    .transition().duration(200).delay(1000)
+                    .style("stroke", function (d) { return (color(d.variety)) })
+                    .style("opacity", "1")
+            }
+
+            function path(d) {
+                return d3.line()(dimensions.map(function (p) { return [x(p), y[p](d[p])]; }));
+            }
+
+            svg.selectAll("myPath")
+                .data(data)
+                .enter()
+                .append("path")
+                .attr("class", function (d) { return "line " + d.variety })
+                .attr("d", path)
+                .style("fill", "none")
+                .style("stroke", function (d) { return (color(d.variety)) })
+                .style("opacity", 0.5)
+                .on("mouseover", highlight)
+                .on("mouseleave", doNotHighlight)
+
+            svg.selectAll("myAxis")
+                .data(dimensions).enter()
+                .append("g")
+                .attr("class", "axis")
+                .attr("transform", function (d) { return "translate(" + x(d) + ")"; })
+                .each(function (d) { d3.select(this).call(d3.axisLeft().ticks(5).scale(y[d])); })
+                .append("text")
+                .style("text-anchor", "middle")
+                .attr("y", -9)
+                .text(function (d) { return d; })
+                .style("fill", "black")
+
+            svg.append("circle").attr("cx", 800).attr("cy", 30).attr("r", 6).style("fill", "#6bf54c")
+            svg.append("circle").attr("cx", 800).attr("cy", 60).attr("r", 6).style("fill", "#524cf5")
+            svg.append("circle").attr("cx", 800).attr("cy", 90).attr("r", 6).style("fill", "#f54c4c")
+            svg.append("text").attr("x", 820).attr("y", 30).text("Setosa").style("font-size", "15px").attr("alignment-baseline", "middle")
+            svg.append("text").attr("x", 820).attr("y", 60).text("Versicolor").style("font-size", "15px").attr("alignment-baseline", "middle")
+            svg.append("text").attr("x", 820).attr("y", 90).text("Virginica").style("font-size", "15px").attr("alignment-baseline", "middle")
+
+        })
+
+
+    </script>
+
+</body>
+
+</html>

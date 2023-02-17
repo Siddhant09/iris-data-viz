@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Iris Dataset - Voilin Plot with D3.js</title>
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <style>
+        .tick text {
+            font-size: 12px;
+        }
+
+        a {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <table width="100%">
+        <tr>
+            <td width="50%">
+                <h1>Iris Dataset - Voilin Plot</h1>
+            </td>
+            <td width="50%" style="vertical-align: top;">
+                <div style="text-align: right; font-size: 20px !important;">
+                    <a href="histogram.html">Histogram</a>
+                    <a href="scatteredplot.html">Scatter Plot</a>
+                    <a href="parallel.html">Parallel Coordinates</a>
+                    <a href="voilin.html">Voilin Plot</a>
+                    <a href="boxplot.html">Box Plot</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <div id="svg"></div>
+    <script>
+        var margin = { top: 10, right: 100, bottom: 30, left: 30 },
+            width = 900 - margin.left - margin.right,
+            height = 800 - margin.top - margin.bottom;
+
+        var svg = d3.select("#svg")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+        d3.csv("iris_new.csv", function (data) {
+
+            var y = d3.scaleLinear()
+                .domain([0, 9])
+                .range([height, 0])
+            svg.append("g").call(d3.axisLeft(y))
+
+            var x = d3.scaleBand()
+                .range([0, width])
+                .domain(["Setosa", "Versicolor", "Virginica"])
+                .padding(0.05)
+            svg.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x))
+
+            var histogram = d3.histogram()
+                .domain(y.domain())
+                .thresholds(y.ticks(20))
+                .value(d => d)
+
+            var sl = d3.nest()
+                .key(function (d) { return d.variety; })
+                .rollup(function (d) {
+                    input = d.map(function (g) { return g.sepal_length; })
+                    bins = histogram(input)
+                    return (bins)
+                })
+                .entries(data)
+
+            var sw = d3.nest()
+                .key(function (d) { return d.variety; })
+                .rollup(function (d) {
+                    input = d.map(function (g) { return g.sepal_width; })
+                    bins = histogram(input)
+                    return (bins)
+                })
+                .entries(data)
+
+            var pl = d3.nest()
+                .key(function (d) { return d.variety; })
+                .rollup(function (d) {
+                    input = d.map(function (g) { return g.petal_length; })
+                    bins = histogram(input)
+                    return (bins)
+                })
+                .entries(data)
+
+            var pw = d3.nest()
+                .key(function (d) { return d.variety; })
+                .rollup(function (d) {
+                    input = d.map(function (g) { return g.petal_width; })
+                    bins = histogram(input)
+                    return (bins)
+                })
+                .entries(data)
+
+            var sl_maxNum = 0
+            for (i in sl) {
+                allBins = sl[i].value
+                lengths = allBins.map(function (a) { return a.length; })
+                longuest = d3.max(lengths)
+                if (longuest > sl_maxNum) { sl_maxNum = longuest }
+            }
+
+            var sw_maxNum = 0
+            for (i in sw) {
+                allBins = sw[i].value
+                lengths = allBins.map(function (a) { return a.length; })
+                longuest = d3.max(lengths)
+                if (longuest > sw_maxNum) { sw_maxNum = longuest }
+            }
+
+            var pl_maxNum = 0
+            for (i in pl) {
+                allBins = pl[i].value
+                lengths = allBins.map(function (a) { return a.length; })
+                longuest = d3.max(lengths)
+                if (longuest > pl_maxNum) { pl_maxNum = longuest }
+            }
+
+            var pw_maxNum = 0
+            for (i in pw) {
+                allBins = pw[i].value
+                lengths = allBins.map(function (a) { return a.length; })
+                longuest = d3.max(lengths)
+                if (longuest > pw_maxNum) { pw_maxNum = longuest }
+            }
+
+            var sl_xNum = d3.scaleLinear()
+                .range([0, x.bandwidth()])
+                .domain([-sl_maxNum, sl_maxNum])
+
+            var sw_xNum = d3.scaleLinear()
+                .range([0, x.bandwidth()])
+                .domain([-sw_maxNum, sw_maxNum])
+
+            var pl_xNum = d3.scaleLinear()
+                .range([0, x.bandwidth()])
+                .domain([-pl_maxNum, pl_maxNum])
+
+            var pw_xNum = d3.scaleLinear()
+                .range([0, x.bandwidth()])
+                .domain([-pw_maxNum, pw_maxNum])
+
+            svg.selectAll("myViolin")
+                .data(sl)
+                .enter()
+                .append("g")
+                .attr("transform", function (d) { return ("translate(" + x(d.key) + " ,0)") })
+                .append("path")
+                .datum(function (d) { return (d.value) })
+                .style("stroke", "none")
+                .style("fill", "#6bf54c")
+                .style("opacity", "0.5")
+                .attr("d", d3.area()
+                    .x0(function (d) { return (sl_xNum(-d.length)) })
+                    .x1(function (d) { return (sl_xNum(d.length)) })
+                    .y(function (d) { return (y(d.x0)) })
+                    .curve(d3.curveCatmullRom)
+                )
+
+            svg.selectAll("myViolin")
+                .data(sw)
+                .enter()
+                .append("g")
+                .attr("transform", function (d) { return ("translate(" + x(d.key) + " ,0)") })
+                .append("path")
+                .datum(function (d) { return (d.value) })
+                .style("stroke", "none")
+                .style("fill", "#524cf5")
+                .style("opacity", "0.5")
+                .attr("d", d3.area()
+                    .x0(function (d) { return (sw_xNum(-d.length)) })
+                    .x1(function (d) { return (sw_xNum(d.length)) })
+                    .y(function (d) { return (y(d.x0)) })
+                    .curve(d3.curveCatmullRom)
+                )
+
+            svg.selectAll("myViolin")
+                .data(pl)
+                .enter()
+                .append("g")
+                .attr("transform", function (d) { return ("translate(" + x(d.key) + " ,0)") })
+                .append("path")
+                .datum(function (d) { return (d.value) })
+                .style("stroke", "none")
+                .style("fill", "#f54c4c")
+                .style("opacity", "0.5")
+                .attr("d", d3.area()
+                    .x0(function (d) { return (pl_xNum(-d.length)) })
+                    .x1(function (d) { return (pl_xNum(d.length)) })
+                    .y(function (d) { return (y(d.x0)) })
+                    .curve(d3.curveCatmullRom)
+                )
+
+            svg.selectAll("myViolin")
+                .data(pw)
+                .enter()
+                .append("g")
+                .attr("transform", function (d) { return ("translate(" + x(d.key) + " ,0)") })
+                .append("path")
+                .datum(function (d) { return (d.value) })
+                .style("stroke", "none")
+                .style("fill", "#f1ff5c")
+                .style("opacity", "0.5")
+                .attr("d", d3.area()
+                    .x0(function (d) { return (pw_xNum(-d.length)) })
+                    .x1(function (d) { return (pw_xNum(d.length)) })
+                    .y(function (d) { return (y(d.x0)) })
+                    .curve(d3.curveCatmullRom)
+                )
+
+            svg.append("circle").attr("cx", 770).attr("cy", 30).attr("r", 6).style("fill", "#6bf54c")
+            svg.append("circle").attr("cx", 770).attr("cy", 60).attr("r", 6).style("fill", "#524cf5")
+            svg.append("circle").attr("cx", 770).attr("cy", 90).attr("r", 6).style("fill", "#f54c4c")
+            svg.append("circle").attr("cx", 770).attr("cy", 120).attr("r", 6).style("fill", "#f1ff5c")
+            svg.append("text").attr("x", 790).attr("y", 30).text("sepal_length").style("font-size", "15px").attr("alignment-baseline", "middle")
+            svg.append("text").attr("x", 790).attr("y", 60).text("sepal_width").style("font-size", "15px").attr("alignment-baseline", "middle")
+            svg.append("text").attr("x", 790).attr("y", 90).text("petal_length").style("font-size", "15px").attr("alignment-baseline", "middle")
+            svg.append("text").attr("x", 790).attr("y", 120).text("petal_width").style("font-size", "15px").attr("alignment-baseline", "middle")
+        })
+
+    </script>
+
+</body>
+
+</html>
